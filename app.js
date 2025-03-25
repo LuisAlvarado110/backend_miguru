@@ -21,12 +21,12 @@ connection.on('error', (err)=>{
 
 
 //modelo usuarios
-const usuarios = mongoose.model('usuarios', {nombreCreador: String});
+const usuarios = mongoose.model('usuarios', {nombre: String, correo: String, rol: String});
 
 
 //Método POST
 app.post('/add', (req, res) => {
-    const nuevoCreador = new usuarios({ nombreCreador: req.body.nombreCreador });
+    const nuevoCreador = new usuarios({ nombre: req.body.nombre });
 
     nuevoCreador.save()
         .then(doc => {
@@ -41,7 +41,7 @@ app.post('/add', (req, res) => {
 
 //Método GET
 app.get('/getAll', (req, res) =>{
-    usuarios.find({}, 'nombreCreador')
+    usuarios.find({}, 'nombre')
     .then(doc =>{
         res.json(doc);
     })
@@ -54,13 +54,13 @@ app.get('/getAll', (req, res) =>{
 //Método UPDATE
 app.patch('/update/:id', (req, res) => {
     const { id } = req.params;
-    const { nombreCreador } = req.body; // Extraer el nuevo nombre del JSON recibido
+    const { nombre } = req.body; // Extraer el nuevo nombre del JSON recibido
 
-    if (!nombreCreador) {
-        return res.status(400).json({ response: 'error', message: 'El campo nombreCreador es requerido' });
+    if (!nombre) {
+        return res.status(400).json({ response: 'error', message: 'El campo nombre es requerido' });
     }
 
-    usuarios.findByIdAndUpdate(id, { $set: { nombreCreador } }, { new: true }) // Devolver el documento actualizado
+    usuarios.findByIdAndUpdate(id, { $set: { nombre } }, { new: true }) // Devolver el documento actualizado
         .then(doc => {
             if (!doc) {
                 return res.status(404).json({ response: 'error', message: 'Creador no encontrado' });
