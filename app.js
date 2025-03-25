@@ -20,13 +20,13 @@ connection.on('error', (err)=>{
 });
 
 
-//modelo Creadores
-const Creadores = mongoose.model('Creadores', {nombreCreador: String});
+//modelo usuarios
+const usuarios = mongoose.model('usuarios', {nombreCreador: String});
 
 
 //Método POST
 app.post('/add', (req, res) => {
-    const nuevoCreador = new Creadores({ nombreCreador: req.body.nombreCreador });
+    const nuevoCreador = new usuarios({ nombreCreador: req.body.nombreCreador });
 
     nuevoCreador.save()
         .then(doc => {
@@ -41,7 +41,7 @@ app.post('/add', (req, res) => {
 
 //Método GET
 app.get('/getAll', (req, res) =>{
-    Creadores.find({}, 'nombreCreador')
+    usuarios.find({}, 'nombreCreador')
     .then(doc =>{
         res.json(doc);
     })
@@ -60,7 +60,7 @@ app.patch('/update/:id', (req, res) => {
         return res.status(400).json({ response: 'error', message: 'El campo nombreCreador es requerido' });
     }
 
-    Creadores.findByIdAndUpdate(id, { $set: { nombreCreador } }, { new: true }) // Devolver el documento actualizado
+    usuarios.findByIdAndUpdate(id, { $set: { nombreCreador } }, { new: true }) // Devolver el documento actualizado
         .then(doc => {
             if (!doc) {
                 return res.status(404).json({ response: 'error', message: 'Creador no encontrado' });
@@ -77,7 +77,7 @@ app.patch('/update/:id', (req, res) => {
 app.delete('/delete/:id', (req, res) => {
     const { id } = req.params;
 
-    Creadores.findByIdAndDelete(id)
+    usuarios.findByIdAndDelete(id)
         .then(doc => {
             if (!doc) {
                 return res.status(404).json({ response: 'error', message: 'Creador no encontrado' });
