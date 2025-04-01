@@ -11,6 +11,7 @@
     "start": "node server.js"
   },
   "dependencies": {
+    "bcryptjs": "^3.0.2",
     "express": "^4.21.2",
     "mongodb": "^6.15.0",
     "mongoose": "^8.13.0",

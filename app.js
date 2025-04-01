@@ -1,6 +1,7 @@
 const express = require('express');
 const bodyParser = require('body-parser');
 const mongoose = require('mongoose');
+const usuarioRouter = require('./routes/usuario');
 const app = express();
 app.use(express.json());
 
@@ -19,10 +20,17 @@ connection.on('error', (err)=>{
     console.log('Error en conectar: ', err);
 });
 
+app.listen(port, hostname, () => {
+    console.log(`Server corriendo en http://${hostname}:${port}/`);
+});
 
+app.use('/usuario', usuarioRouter);
+
+/*
 //modelo usuarios
-const usuarios = mongoose.model('usuarios', {nombre: String, correo: String, rol: String});
-
+//const usuarios = mongoose.model('usuarios', {nombre: String, correo: String, rol: String, contraseña: String});
+//agregar correo, contraseña encriptada
+const usuarios = mongoose.model('usuarios', {nombre: String});
 
 //Método POST
 app.post('/add', (req, res) => {
@@ -88,8 +96,4 @@ app.delete('/delete/:id', (req, res) => {
             console.error('Error al eliminar:', err.message);
             res.status(500).json({ response: 'error', message: err.message });
         });
-});
-
-app.listen(port, hostname, () => {
-    console.log(`Server corriendo en http://${hostname}:${port}/`);
-});
+});*/

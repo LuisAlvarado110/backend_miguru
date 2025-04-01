@@ -1,0 +1,72 @@
+const Usuario = require('../models/Usuario');
+
+// Método POST - Agregar un nuevo usuario
+async function add(req, res) {
+    try {
+        const { nombre, correo, contraseña, rol } = req.body;
+        
+        if (!nombre || !correo || !contraseña || !rol) {
+            return res.status(400).json({ response: 'error', message: 'Todos los campos son obligatorios' });
+        }
+
+        const nuevoUsuario = new Usuario({ nombre, correo, contraseña, rol });
+        await nuevoUsuario.save();
+        res.json({ response: 'success', usuario: nuevoUsuario });
+    } catch (error) {
+        console.error('Error al insertar:', error);
+        res.status(500).json({ response: 'error', message: error.message });
+    }
+}
+
+// Método GET - Obtener todos los usuarios
+async function getAll(req, res) {
+    try {
+        const usuarios = await Usuario.find({}, 'nombre correo rol');
+        res.json(usuarios);
+    } catch (error) {
+        console.error('Error al consultar:', error.message);
+        res.status(500).json({ response: 'error', message: error.message });
+    }
+}
+
+// Método UPDATE - Actualizar un usuario por ID
+async function update(req, res) {
+    try {
+        const { id } = req.params;
+        const { nombre, correo, rol } = req.body;
+
+        if (!nombre && !correo && !rol) {
+            return res.status(400).json({ response: 'error', message: 'Debe proporcionar al menos un campo para actualizar' });
+        }
+
+        const updatedUsuario = await Usuario.findByIdAndUpdate(id, { $set: { nombre, correo, rol } }, { new: true });
+
+        if (!updatedUsuario) {
+            return res.status(404).json({ response: 'error', message: 'Usuario no encontrado' });
+        }
+
+        res.json({ response: 'success', updated: updatedUsuario });
+    } catch (error) {
+        console.error('Error al actualizar:', error.message);
+        res.status(500).json({ response: 'error', message: error.message });
+    }
+}
+
+// Método DELETE - Eliminar un usuario por ID
+async function remove(req, res) {
+    try {
+        const { id } = req.params;
+        const deletedUsuario = await Usuario.findByIdAndDelete(id);
+
+        if (!deletedUsuario) {
+            return res.status(404).json({ response: 'error', message: 'Usuario no encontrado' });
+        }
+
+        res.json({ response: 'success', deleted: deletedUsuario });
+    } catch (error) {
+        console.error('Error al eliminar:', error.message);
+        res.status(500).json({ response: 'error', message: error.message });
+    }
+}
+
+module.exports = { add, getAll, update, remove };
