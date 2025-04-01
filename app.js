@@ -24,7 +24,7 @@ app.listen(port, hostname, () => {
     console.log(`Server corriendo en http://${hostname}:${port}/`);
 });
 
-app.use('/usuario', usuarioRouter);
+app.use('/usuarios', usuarioRouter);
 
 /*
 //modelo usuarios
