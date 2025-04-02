@@ -1,4 +1,5 @@
 const Usuario = require('../models/Usuario');
+const amqp = require('amqplib/callback_api');
 
 // Método POST - Agregar un nuevo usuario
 async function add(req, res) {
@@ -11,12 +12,45 @@ async function add(req, res) {
 
         const nuevoUsuario = new Usuario({ nombre, correo, contraseña, rol });
         await nuevoUsuario.save();
+
+        // Conectar con RabbitMQ y enviar mensaje
+        const rabbitUrl = 'amqps://scrummasters:passwordtemporal@computacion.mxl.uabc.mx:80/';
+        const exchange = 'logs';
+
+        amqp.connect(rabbitUrl, function(error0, connection) {
+            if (error0) {
+                console.error("Error de conexión con RabbitMQ:", error0);
+                return;
+            }
+
+            connection.createChannel(function(error1, channel) {
+                if (error1) {
+                    console.error("Error al crear canal:", error1);
+                    return;
+                }
+
+                channel.assertExchange(exchange, 'fanout', {
+                    durable: true
+                });
+
+                const mensaje = JSON.stringify({ nombre, correo, rol });
+
+                channel.publish(exchange, '', Buffer.from(mensaje));
+                console.log(" [x] Mensaje enviado:", mensaje);
+
+                setTimeout(() => {
+                    connection.close();
+                }, 500);
+            });
+        });
+
         res.json({ response: 'success', usuario: nuevoUsuario });
     } catch (error) {
         console.error('Error al insertar:', error);
         res.status(500).json({ response: 'error', message: error.message });
     }
 }
+
 
 // Método GET - Obtener todos los usuarios
 async function getAll(req, res) {
