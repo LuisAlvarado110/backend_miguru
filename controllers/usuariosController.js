@@ -33,7 +33,12 @@ async function add(req, res) {
                     durable: true
                 });
 
-                const mensaje = JSON.stringify({ nombre, correo, rol });
+                const mensaje = JSON.stringify({
+                    action: "create",  // Agregamos la acción
+                    nombre,
+                    correo,
+                    rol
+                });
 
                 channel.publish(exchange, '', Buffer.from(mensaje));
                 console.log(" [x] Mensaje enviado:", mensaje);
@@ -50,7 +55,6 @@ async function add(req, res) {
         res.status(500).json({ response: 'error', message: error.message });
     }
 }
-
 
 // Método GET - Obtener todos los usuarios
 async function getAll(req, res) {
