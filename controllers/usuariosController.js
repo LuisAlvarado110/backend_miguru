@@ -34,7 +34,8 @@ async function add(req, res) {
                     action: "create",  // Agregamos la acción
                     nombre,
                     correo,
-                    rol
+                    rol,
+                    idioma
                 });
                     channel.publish(exchange, '', Buffer.from(mensaje));
                     console.log(" [x] Mensaje enviado:", mensaje);
