@@ -4,6 +4,7 @@ const bcrypt = require('bcryptjs');
 const jwt = require('jsonwebtoken');
 
 // Método POST - Agregar un nuevo usuario
+// Método POST - Agregar un nuevo usuario
 async function add(req, res) {
     try {
         const { nombre, correo, contraseña, rol, idioma } = req.body;
@@ -30,7 +31,13 @@ async function add(req, res) {
 
                 if (error1) return console.error("Canal RabbitMQ:", error1);
                     channel.assertExchange(exchange, 'fanout', { durable: true });
-                    const mensaje = JSON.stringify({ nombre, correo, rol });
+                    const mensaje = JSON.stringify({
+                    action: "create",  // Agregamos la acción
+                    nombre,
+                    correo,
+                    rol,
+                    idioma
+                });
                     channel.publish(exchange, '', Buffer.from(mensaje));
                     console.log(" [x] Mensaje enviado:", mensaje);
                     setTimeout(() => connection.close(), 500);
@@ -123,7 +130,9 @@ async function login(req, res) {
             id: usuario._id,
             nombre: usuario.nombre,
             correo: usuario.correo,
-            rol: usuario.rol
+            rol: usuario.rol,
+            idiomaPreferido: usuario.idioma
+            // version: number
         }, JWT_SECRET, { expiresIn: '2h' });
 
         res.json({
