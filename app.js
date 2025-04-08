@@ -3,6 +3,8 @@ const mongoose = require('mongoose');
 const swaggerJsdoc = require('swagger-jsdoc');
 const swaggerUi = require('swagger-ui-express');
 const usuarioRouter = require('./routes/usuario');
+require('dotenv').config();
+
 
 const app = express();
 app.use(express.json());
