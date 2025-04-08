@@ -22,6 +22,8 @@ const usuariosController = require('../controllers/usuariosController');
  *                 type: string
  *               rol:
  *                 type: string
+ *               idioma:
+ *                  type: string
  *     responses:
  *       201:
  *         description: Usuario agregado exitosamente
@@ -103,5 +105,64 @@ router.patch('/update/:id', usuariosController.update);
  *         description: Error en el servidor
  */
 router.delete('/delete/:id', usuariosController.remove);
+
+/**
+ * @swagger
+ * /login:
+ *   post:
+ *     summary: Iniciar sesión como usuario
+ *     tags:
+ *       - Usuarios
+ *     requestBody:
+ *       required: true
+ *       content:
+ *         application/json:
+ *           schema:
+ *             type: object
+ *             required:
+ *               - correo
+ *               - contraseña
+ *             properties:
+ *               correo:
+ *                 type: string
+ *                 example: usuario@correo.com
+ *               contraseña:
+ *                 type: string
+ *                 example: contraseña123
+ *     responses:
+ *       200:
+ *         description: Login exitoso con token
+ *         content:
+ *           application/json:
+ *             schema:
+ *               type: object
+ *               properties:
+ *                 response:
+ *                   type: string
+ *                   example: success
+ *                 token:
+ *                   type: string
+ *                   example: eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9...
+ *                 usuario:
+ *                   type: object
+ *                   properties:
+ *                     id:
+ *                       type: string
+ *                     nombre:
+ *                       type: string
+ *                     correo:
+ *                       type: string
+ *                     rol:
+ *                       type: string
+ *                     idioma:
+ *                       type: string
+ *       400:
+ *         description: Faltan campos obligatorios
+ *       401:
+ *         description: Credenciales incorrectas
+ *       500:
+ *         description: Error interno del servidor
+ */
+router.post('/login', usuariosController.login);
 
 module.exports = router;
