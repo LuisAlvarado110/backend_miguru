@@ -51,7 +51,6 @@ async function add(req, res) {
     }
 }
 
-
 // Método GET - Obtener todos los usuarios
 async function getAll(req, res) {
     try {
