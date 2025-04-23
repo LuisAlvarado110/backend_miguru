@@ -4,7 +4,6 @@ const bcrypt = require('bcryptjs');
 const jwt = require('jsonwebtoken');
 
 // Método POST - Agregar un nuevo usuario
-// Método POST - Agregar un nuevo usuario
 async function add(req, res) {
     try {
         const { nombre, correo, contraseña, rol, idioma } = req.body;
@@ -23,7 +22,7 @@ async function add(req, res) {
 
         // RabbitMQ (sin cambios)
         const rabbitUrl = 'amqps://scrummasters:passwordtemporal@computacion.mxl.uabc.mx:80/';
-        const exchange = 'logs';
+        const exchange = 'nuevoUsuario'; //respetar nombre del canal
 
         amqp.connect(rabbitUrl, function(error0, connection) {
             if (error0) return console.error("RabbitMQ Error:", error0);
@@ -61,6 +60,9 @@ async function getAll(req, res) {
         res.status(500).json({ response: 'error', message: error.message });
     }
 }
+
+//Agregar método obtener por ID
+
 
 // Método UPDATE - Actualizar un usuario por ID
 async function update(req, res) {
@@ -137,7 +139,7 @@ async function login(req, res) {
         res.json({
             response: 'success',
             token,
-            usuario: {
+            usuario: {//se podría omitir
                 id: usuario._id,
                 nombre: usuario.nombre,
                 correo: usuario.correo,
@@ -145,6 +147,8 @@ async function login(req, res) {
                 idioma: usuario.idioma
             }
         });
+
+        //agregar rabbit para indicar login con exchange = autenticarUsuario
     } catch (error) {
         console.error('Error en login:', error);
         res.status(500).json({ response: 'error', message: error.message });
