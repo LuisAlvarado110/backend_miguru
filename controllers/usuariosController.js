@@ -133,13 +133,13 @@ async function login(req, res) {
             correo: usuario.correo,
             rol: usuario.rol,
             idiomaPreferido: usuario.idioma
-            // version: number
         }, JWT_SECRET, { expiresIn: '2h' });
 
+        // RESPUESTA del login
         res.json({
             response: 'success',
             token,
-            usuario: {//se podría omitir
+            usuario: {
                 id: usuario._id,
                 nombre: usuario.nombre,
                 correo: usuario.correo,
@@ -148,7 +148,29 @@ async function login(req, res) {
             }
         });
 
-        //agregar rabbit para indicar login con exchange = autenticarUsuario
+
+        const rabbitUrl = 'amqps://scrummasters:passwordtemporal@computacion.mxl.uabc.mx:80/';
+        const exchange = 'loginUsuario'; // nombre del exchange para login
+
+        amqp.connect(rabbitUrl, function(error0, connection) {
+            if (error0) return console.error("RabbitMQ Error:", error0);
+            connection.createChannel(function(error1, channel) {
+                if (error1) return console.error("Canal RabbitMQ:", error1);
+
+                channel.assertExchange(exchange, 'fanout', { durable: true });
+
+                const mensaje = JSON.stringify({
+                    action: "login",
+                    token
+                });
+
+                channel.publish(exchange, '', Buffer.from(mensaje));
+                console.log(" [x] Mensaje de login enviado:", mensaje);
+
+                setTimeout(() => connection.close(), 500); // cerrar conexión después de un tiempo corto
+            });
+        });
+
     } catch (error) {
         console.error('Error en login:', error);
         res.status(500).json({ response: 'error', message: error.message });
