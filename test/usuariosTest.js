@@ -1,13 +1,19 @@
 const chai = require('chai');
 const sinon = require('sinon');
 const amqp = require('amqplib/callback_api');
+const chaiHttp = require('chai-http');
 const expect = chai.expect;
 const Usuario = require('../models/Usuario');
+const bcrypt = require('bcryptjs');
+const jwt = require('jsonwebtoken');
+chai.use(chaiHttp);
 
 
 const { add } = require('../controllers/usuariosController');
 const { getAll } = require('../controllers/usuariosController');
-
+const { update } = require('../controllers/usuariosController');
+const { remove } = require('../controllers/usuariosController');
+const { login } = require('../controllers/usuariosController');
 
 describe('add()', function() {
     let req, res, findOneStub, saveStub, amqpConnectStub, channelMock, connectionMock;
@@ -18,7 +24,7 @@ describe('add()', function() {
                 nombre: 'Test User',
                 correo: 'test@example.com',
                 contraseña: 'password123',
-                rol: 'user',
+                rol: 'Estudiante',
                 idioma: 'es'
             }
         };
@@ -131,3 +137,109 @@ describe('getAll()', function() {
         expect(res.json.calledWithMatch({ response: 'error' })).to.be.true;
     });
 });
+
+describe('update()', () => {
+    let req, res;
+
+    beforeEach(() => {
+        req = {
+            params: { id: '1234567890' },
+            body: {}
+        };
+        res = {
+            status: sinon.stub().returnsThis(),
+            json: sinon.stub()
+        };
+    });
+
+    afterEach(() => {
+        sinon.restore();
+    });
+
+    it('debe devolver 400 si no se envía ningún campo', async () => {
+        await update(req, res);
+
+        expect(res.status.calledWith(400)).to.be.true;
+        expect(res.json.calledWithMatch({ response: 'error' })).to.be.true;
+    });
+
+    it('debe devolver 404 si el usuario no existe', async () => {
+        req.body = { nombre: 'Nuevo Nombre' };
+        sinon.stub(Usuario, 'findByIdAndUpdate').resolves(null);
+
+        await update(req, res);
+
+        expect(res.status.calledWith(404)).to.be.true;
+        expect(res.json.calledWithMatch({ message: 'Usuario no encontrado' })).to.be.true;
+    });
+
+    it('debe devolver el usuario actualizado si se encuentra', async () => {
+        req.body = { nombre: 'Actualizado', correo: 'nuevo@correo.com' };
+        const fakeUser = { _id: '123', nombre: 'Actualizado', correo: 'nuevo@correo.com', rol: 'Estudiante', idioma: 'es' };
+
+        sinon.stub(Usuario, 'findByIdAndUpdate').resolves(fakeUser);
+
+        await update(req, res);
+
+        expect(res.json.calledWithMatch({ response: 'success', updated: fakeUser })).to.be.true;
+    });
+
+    it('debe manejar errores internos con 500', async () => {
+        req.body = { nombre: 'ErrorNombre' };
+        sinon.stub(Usuario, 'findByIdAndUpdate').throws(new Error('Fallo grave'));
+
+        await update(req, res);
+
+        expect(res.status.calledWith(500)).to.be.true;
+        expect(res.json.calledWithMatch({ response: 'error', message: 'Fallo grave' })).to.be.true;
+    });
+});
+
+describe('Controlador Usuarios - remove()', () => {
+    let req, res;
+
+    beforeEach(() => {
+        req = {
+            params: { id: '1234567890' }
+        };
+        res = {
+            status: sinon.stub().returnsThis(),
+            json: sinon.stub()
+        };
+    });
+
+    afterEach(() => {
+        sinon.restore();
+    });
+
+    it('debe devolver 404 si el usuario a eliminar no existe', async () => {
+        sinon.stub(Usuario, 'findByIdAndDelete').resolves(null);
+
+        const { remove } = require('../controllers/usuariosController');
+        await remove(req, res);
+
+        expect(res.status.calledWith(404)).to.be.true;
+        expect(res.json.calledWithMatch({ response: 'error', message: 'Usuario no encontrado' })).to.be.true;
+    });
+
+    it('debe devolver el usuario eliminado si existe', async () => {
+        const fakeUser = { _id: '123', nombre: 'Usuario Eliminado' };
+        sinon.stub(Usuario, 'findByIdAndDelete').resolves(fakeUser);
+
+        const { remove } = require('../controllers/usuariosController');
+        await remove(req, res);
+
+        expect(res.json.calledWithMatch({ response: 'success', deleted: fakeUser })).to.be.true;
+    });
+
+    it('debe manejar errores internos con 500', async () => {
+        sinon.stub(Usuario, 'findByIdAndDelete').throws(new Error('Error de base de datos'));
+
+        const { remove } = require('../controllers/usuariosController');
+        await remove(req, res);
+
+        expect(res.status.calledWith(500)).to.be.true;
+        expect(res.json.calledWithMatch({ response: 'error', message: 'Error de base de datos' })).to.be.true;
+    });
+});
+
