@@ -243,3 +243,98 @@ describe('Controlador Usuarios - remove()', () => {
     });
 });
 
+describe('Controlador Usuarios - login()', () => {
+    let req, res;
+
+    beforeEach(() => {
+        req = {
+            body: {}
+        };
+        res = {
+            status: sinon.stub().returnsThis(),
+            json: sinon.stub()
+        };
+    });
+
+    afterEach(() => {
+        sinon.restore();
+    });
+
+    it('debe devolver 400 si faltan correo o contraseña', async () => {
+        req.body = { correo: '' };
+
+        await login(req, res);
+
+        expect(res.status.calledWith(400)).to.be.true;
+        expect(res.json.calledWithMatch({ message: 'Correo y contraseña son obligatorios' })).to.be.true;
+    });
+
+    it('debe devolver 401 si el usuario no existe', async () => {
+        req.body = { correo: 'test@mail.com', contraseña: '123' };
+        sinon.stub(Usuario, 'findOne').resolves(null);
+
+        await login(req, res);
+
+        expect(res.status.calledWith(401)).to.be.true;
+        expect(res.json.calledWithMatch({ message: 'Correo o contraseña incorrectos' })).to.be.true;
+    });
+
+    it('debe devolver 401 si la contraseña es incorrecta', async () => {
+        req.body = { correo: 'test@mail.com', contraseña: '123' };
+        sinon.stub(Usuario, 'findOne').resolves({ correo: 'test@mail.com', contraseña: 'hashed' });
+        sinon.stub(bcrypt, 'compare').resolves(false);
+
+        await login(req, res);
+
+        expect(res.status.calledWith(401)).to.be.true;
+        expect(res.json.calledWithMatch({ message: 'Correo o contraseña incorrectos' })).to.be.true;
+    });
+
+    it('debe devolver token y usuario si el login es exitoso', async () => {
+        req.body = { correo: 'test@mail.com', contraseña: '123' };
+        const fakeUser = {
+            _id: '1',
+            nombre: 'Test',
+            correo: 'test@mail.com',
+            rol: 'Estudiante',
+            idioma: 'es',
+            contraseña: 'hashed'
+        };
+
+        sinon.stub(Usuario, 'findOne').resolves(fakeUser);
+        sinon.stub(bcrypt, 'compare').resolves(true);
+        sinon.stub(jwt, 'sign').returns('fake.jwt.token');
+        
+        // Simula amqp.connect sin hacer conexión real
+        sinon.stub(amqp, 'connect').callsFake((_, cb) => {
+            cb(null, {
+                createChannel: cb2 => cb2(null, {
+                    assertExchange: () => {},
+                    publish: () => {},
+                }),
+                close: () => {}
+            });
+        });
+
+        await login(req, res);
+
+        expect(res.json.calledOnce).to.be.true;
+        expect(res.json.firstCall.args[0]).to.have.property('token', 'fake.jwt.token');
+        expect(res.json.firstCall.args[0].usuario).to.include({
+            nombre: 'Test',
+            correo: 'test@mail.com',
+            rol: 'Estudiante',
+            idioma: 'es'
+        });
+    });
+
+    it('debe manejar errores internos con 500', async () => {
+        req.body = { correo: 'test@mail.com', contraseña: '123' };
+        sinon.stub(Usuario, 'findOne').throws(new Error('DB crash'));
+
+        await login(req, res);
+
+        expect(res.status.calledWith(500)).to.be.true;
+        expect(res.json.calledWithMatch({ message: 'DB crash' })).to.be.true;
+    });
+});
