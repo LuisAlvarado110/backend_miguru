@@ -177,6 +177,57 @@ async function login(req, res) {
     }
 }
 
+async function logout(req, res) {
+    console.log("Llamada a logout");
+    //console.log("Headers recibidos:", req.headers);
+  try {
+    const authHeader = req.headers.authorization;
+    if (!authHeader) {
+      return res.status(401).json({ response: 'error', message: 'Token no proporcionado' });
+    }
+
+    const token = authHeader.split(' ')[1];
+
+    // Aquí podrías invalidar el token si tuvieras un sistema de blacklist
+
+    const rabbitUrl = 'amqps://scrummasters:passwordtemporal@computacion.mxl.uabc.mx:80/';
+    const exchange = 'logoutUsuario'; // nombre del exchange para logout
+
+    const amqp = require('amqplib/callback_api');
+
+    amqp.connect(rabbitUrl, function(error0, connection) {
+      if (error0) {
+        console.error("RabbitMQ Error:", error0);
+        return res.status(500).json({ response: 'error', message: 'Error al conectar con RabbitMQ' });
+      }
+
+      connection.createChannel(function(error1, channel) {
+        if (error1) {
+          console.error("Canal RabbitMQ:", error1);
+          return res.status(500).json({ response: 'error', message: 'Error al crear canal RabbitMQ' });
+        }
+
+        channel.assertExchange(exchange, 'fanout', { durable: true });
+
+        const mensaje = JSON.stringify({
+          action: "logout",
+          token
+        });
+
+        channel.publish(exchange, '', Buffer.from(mensaje));
+        console.log(" [x] Mensaje de logout enviado:", mensaje);
+
+        setTimeout(() => connection.close(), 500);
+      });
+    });
+
+    res.json({ response: 'success', message: 'Sesión cerrada' });
+  } catch (error) {
+    console.error('Error en logout:', error);
+    res.status(500).json({ response: 'error', message: error.message });
+  }
+}
 
 
-module.exports = { add, getAll, update, remove, login };
+
+module.exports = { add, getAll, update, remove, login, logout};

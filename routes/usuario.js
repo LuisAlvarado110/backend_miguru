@@ -165,4 +165,6 @@ router.delete('/delete/:id', usuariosController.remove);
  */
 router.post('/login', usuariosController.login);
 
+router.post('/logout', usuariosController.logout);
+
 module.exports = router;
