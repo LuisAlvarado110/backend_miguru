@@ -4,7 +4,7 @@ const swaggerJsdoc = require('swagger-jsdoc');
 const swaggerUi = require('swagger-ui-express');
 const usuarioRouter = require('./routes/usuario');
 const cors = require('cors');
-const client = require('prom-client'); // <--- nuevo
+const client = require('prom-client');
 require('dotenv').config();
 
 const app = express();
@@ -14,9 +14,13 @@ app.use(cors());
 const hostname = '127.0.0.1';
 const port = 4000;
 
-// ----- MÉTRICAS PROMETHEUS -----
+
 const register = new client.Registry();
 
+
+client.collectDefaultMetrics({ register });
+
+// Métrica para total de solicitudes HTTP
 const httpRequestsTotal = new client.Counter({
   name: 'http_requests_total',
   help: 'Número total de solicitudes HTTP',
@@ -24,33 +28,32 @@ const httpRequestsTotal = new client.Counter({
 });
 register.registerMetric(httpRequestsTotal);
 
+// Métrica para duración de solicitudes HTTP en segundos
 const httpRequestDuration = new client.Histogram({
   name: 'http_request_duration_seconds',
-  help: 'Duración de solicitudes HTTP',
+  help: 'Duración de solicitudes HTTP en segundos',
   labelNames: ['method', 'route', 'status'],
   buckets: [0.1, 0.3, 0.5, 1, 2, 5],
 });
 register.registerMetric(httpRequestDuration);
 
-// Middleware para contar y medir tiempo
+// Middleware para contar y medir tiempo de solicitudes HTTP
 app.use((req, res, next) => {
   const end = httpRequestDuration.startTimer();
   res.on('finish', () => {
     const route = req.route?.path || req.path;
-    httpRequestsTotal.labels(req.method, route, res.statusCode).inc();
-    end({ method: req.method, route, status: res.statusCode });
+    httpRequestsTotal.labels(req.method, route, res.statusCode.toString()).inc();
+    end({ method: req.method, route, status: res.statusCode.toString() });
   });
   next();
 });
 
-// Endpoint de métricas para Prometheus
+
 app.get('/metrics', async (req, res) => {
   res.set('Content-Type', register.contentType);
   res.end(await register.metrics());
 });
-// -------------------------------
 
-// Conexión Mongo
 mongoose.connect('mongodb://localhost:27017/Usuarios');
 const connection = mongoose.connection;
 
@@ -62,7 +65,6 @@ connection.on('error', (err) => {
   console.log('Error en conectar: ', err);
 });
 
-// Swagger
 const swaggerOptions = {
   definition: {
     openapi: '3.0.0',
@@ -78,10 +80,10 @@ const swaggerOptions = {
 const swaggerDocs = swaggerJsdoc(swaggerOptions);
 app.use('/api-docs', swaggerUi.serve, swaggerUi.setup(swaggerDocs));
 
-// Rutas
+
 app.use('/usuarios', usuarioRouter);
 
-// Iniciar servidor
+
 app.listen(port, hostname, () => {
   console.log(`Server corriendo en http://${hostname}:${port}/`);
   console.log(`Swagger disponible en http://${hostname}:${port}/api-docs`);
